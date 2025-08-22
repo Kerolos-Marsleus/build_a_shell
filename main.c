@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/wait.h>
 #define LSH_RL_BUFSIZE  1024  // lsh_read_line_buffer_size
 #define LSH_TOK_BUFSIZE 64
 #define LSH_TOK_DELIM   " \t\r\n\a"
@@ -101,4 +102,26 @@ char** lsh_split_line(char* line){
     }
     tokens[position] = NULL;
     return tokens;
+}
+
+int lsh_launch(char** args){
+    pid_t pid, wpid;
+    int status;
+
+    pid = fork();
+    if(pid == 0){
+        // child process
+        if(execvp(args[0], args) == -1){
+            perror("lsh");
+        }
+        exit(EXIT_FAILURE);
+    }else if(pid < 0){
+        // error forking
+        perror("lsh");
+    }else{
+        do{
+            wpid = waitpid(pid, &status, WUNTRACED);
+        }while(!WIFEXITED(status) && !WIFSIGNALED(status));
+    }
+    return 1;
 }
