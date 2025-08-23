@@ -106,13 +106,19 @@ char** lsh_split_line(char* line){
 
 int lsh_launch(char** args){
     pid_t pid, wpid;
-    int status;
+    int status;             // status for the child process
 
     pid = fork();
     if(pid == 0){
         // child process
+        /*  exec --> execute
+            v    --> vector (array of arguments)
+            p    --> path   (searches in PATH environment variable)
+        
+        */
+
         if(execvp(args[0], args) == -1){
-            perror("lsh");
+            perror("lsh");              // like fprintf but it writes alywas to stderr
         }
         exit(EXIT_FAILURE);
     }else if(pid < 0){
@@ -120,7 +126,18 @@ int lsh_launch(char** args){
         perror("lsh");
     }else{
         do{
-            wpid = waitpid(pid, &status, WUNTRACED);
+            wpid = waitpid(pid, &status, WUNTRACED);  
+            /*
+                status is a pointer where status information is stored
+                
+                wpid --> process pid of the child that changed state
+                
+                WUNTRACED   W-> Wait(part of the wait system call)
+                WUNTRACED tells the waitpid() to also return when a child process is stopped (not just when it exits)
+                without WUNTRACED flag, waitpid() will return when child exits or is killed
+                
+                UnTraced    --> not traced/ stopped
+            */
         }while(!WIFEXITED(status) && !WIFSIGNALED(status));
     }
     return 1;
